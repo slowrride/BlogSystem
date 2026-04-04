@@ -1,0 +1,36 @@
+from django import forms
+from .models import Post, Comment
+
+
+class PostForm(forms.ModelForm):
+    """
+    文章表单
+    """
+    class Meta:
+        model = Post
+        fields = ('title', 'content', 'cover_image')
+        labels = {
+            'title': '标题',
+            'content': '内容',
+            'cover_image': '封面图片（可选）',
+        }
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'content': forms.Textarea(attrs={'class': 'form-control', 'rows': 10}),
+            'cover_image': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+
+class CommentForm(forms.ModelForm):
+    """
+    评论表单
+    """
+    class Meta:
+        model = Comment
+        fields = ('content',)
+        labels = {
+            'content': '评论内容',
+        }
+        widgets = {
+            'content': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }

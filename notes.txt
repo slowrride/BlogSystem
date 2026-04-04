@@ -1,0 +1,17 @@
+Django 博客系统迁移步骤说明
+
+问题原因：在配置自定义用户模型 (AUTH_USER_MODEL) 之前，数据库已经被迁移过了。导致自定义用户模型的迁移文件没有正确创建。
+
+解决方案：按正确顺序重新创建迁移文件
+
+步骤：
+1. 确保用户模型的迁移文件首先创建（继承自 auth）
+2. 然后创建博客应用的迁移文件（依赖用户模型）
+3. 运行 makemigrations
+4. 运行 migrate
+5. 创建超级用户
+
+注意：
+- users/migrations/0001_initial.py 需要依赖 auth 应用
+- blog/migrations/0001_initial.py 需要依赖 users 应用
+- 确保 INSTALLED_APPS 中 apps 顺序正确（users 在 blog 之前）
