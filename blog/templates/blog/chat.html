@@ -1,0 +1,264 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}与 {{ other_user.username }} 聊天 - 个人博客{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding-top: 20px;">
+    <div class="row">
+        <!-- 左侧会话列表 -->
+        <div class="col-md-4 mb-3">
+            <div class="card" style="height: calc(100vh - 120px);">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">消息</h5>
+                </div>
+                <div class="card-body p-0" style="overflow-y: auto; max-height: calc(100vh - 200px);">
+                    <a href="{% url 'message_list' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <span>💬</span>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">全部消息</h6>
+                                <small class="text-muted">查看所有会话</small>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="{% url 'chat_with' other_user.username %}" class="list-group-item list-group-item-action active">
+                        <div class="d-flex align-items-center">
+                            {% if other_user.avatar %}
+                                <img src="{{ other_user.avatar.url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ other_user.username }}">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <span>{{ other_user.username|first|upper }}</span>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0">{{ other_user.username }}</h6>
+                                <small class="text-muted">当前聊天</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧聊天区域 -->
+        <div class="col-md-8">
+            <div class="card" style="height: calc(100vh - 120px);">
+                <div class="card-header d-flex align-items-center" style="background: linear-gradient(135deg, #4A90E2, #89C2D9); color: white;">
+                    {% if other_user.avatar %}
+                        <img src="{{ other_user.avatar.url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ other_user.username }}">
+                    {% else %}
+                        <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <span class="fs-5">{{ other_user.username|first|upper }}</span>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h5 class="mb-0">{{ other_user.username }}</h5>
+                        <small>在线</small>
+                    </div>
+                </div>
+
+                <!-- 消息显示区域 -->
+                <div class="card-body p-3" id="chat-messages" style="overflow-y: auto; max-height: calc(100vh - 350px); background: #f8f9fa;">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="mb-3 {% if message.sender == request.user %}d-flex justify-content-end{% else %}d-flex justify-content-start{% endif %}">
+                                <div class="{% if message.sender == request.user %}bg-primary text-white{% else %}bg-white border{% endif %} rounded-3 px-3 py-2" style="max-width: 70%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                    {% if message.sender != request.user %}
+                                        <small class="text-muted d-block mb-1">{{ other_user.username }}</small>
+                                    {% endif %}
+                                    <p class="mb-1">{{ message.content }}</p>
+                                    <small class="{% if message.sender == request.user %}text-white-50{% else %}text-muted{% endif %}">{{ message.created_at|date:"H:i" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <h4>💬 开始聊天</h4>
+                            <p>向 {{ other_user.username }} 发送第一条消息吧！</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- 消息输入区域 -->
+                <div class="card-footer p-3 bg-white">
+                    <form method="post" id="message-form">
+                        {% csrf_token %}
+                        <div class="position-relative">
+                            <div class="input-group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleChatEmojiPicker()">
+                                    😊
+                                </button>
+                                <input type="text"
+                                       name="content"
+                                       id="message-input"
+                                       class="form-control"
+                                       placeholder="输入消息..."
+                                       required
+                                       autocomplete="off">
+                                <button type="submit" class="btn btn-primary">
+                                    发送
+                                </button>
+                            </div>
+                            <div id="chat-emoji-picker" class="position-absolute bg-white border rounded shadow" style="bottom: 60px; left: 0; display: none; max-height: 300px; overflow-y: auto; z-index: 1000; min-width: 300px;">
+                                <div class="p-2">
+                                    <div class="emoji-category mb-2">
+                                        <small class="text-muted">常用表情</small>
+                                        <div class="emoji-grid d-flex flex-wrap">
+                                            {% for emoji in common_emojis %}
+                                            <span class="emoji-item p-2 cursor-pointer" onclick="insertChatEmoji('{{ emoji }}')">{{ emoji }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="emoji-category">
+                                        <small class="text-muted">手势</small>
+                                        <div class="emoji-grid d-flex flex-wrap">
+                                            {% for emoji in gesture_emojis %}
+                                            <span class="emoji-item p-2 cursor-pointer" onclick="insertChatEmoji('{{ emoji }}')">{{ emoji }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 隐藏全局消息提示 */
+.message-alert {
+    display: none !important;
+}
+
+/* 表情包选择器样式 */
+.emoji-item {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.emoji-item:hover {
+    transform: scale(1.2);
+}
+.emoji-grid {
+    gap: 5px;
+}
+.emoji-grid .emoji-item {
+    font-size: 1.5rem;
+}
+</style>
+
+<script>
+    // 聊天表情包功能
+    function toggleChatEmojiPicker() {
+        const picker = document.getElementById('chat-emoji-picker');
+        picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function insertChatEmoji(emoji) {
+        const input = document.getElementById('message-input');
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const text = input.value;
+
+        input.value = text.substring(0, start) + emoji + text.substring(end);
+        input.focus();
+        input.setSelectionRange(start + emoji.length, start + emoji.length);
+
+        // 插入后隐藏选择器
+        document.getElementById('chat-emoji-picker').style.display = 'none';
+    }
+
+    // 自动滚动到底部
+    function scrollToBottom() {
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // 页面加载时滚动到底部
+    window.onload = scrollToBottom;
+
+    // 记录最后一条消息的时间
+    let lastMessageTime = '{% if messages %}{{ messages.last.created_at|date:"Y-m-d\TH:i:s.u" }}{% else %}{{ "now"|date:"Y-m-d\TH:i:s.u" }}{% endif %}';
+
+    // 表单提交
+    document.getElementById('message-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const input = document.getElementById('message-input');
+        const content = input.value.trim();
+
+        if (content) {
+            const formData = new FormData(this);
+            fetch('{% url 'chat_with' other_user.username %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.redirected) {
+                    // 发送成功，刷新页面
+                    window.location.href = response.url;
+                }
+            });
+        }
+    });
+
+    // 每隔3秒使用AJAX获取新消息（不刷新整个页面）
+    setInterval(function() {
+        // 只有当输入框没有焦点时才获取新消息，避免打字时被打断
+        const messageInput = document.getElementById('message-input');
+        if (document.activeElement !== messageInput) {
+            fetch('{% url 'get_new_messages' other_user.username %}?last_time=' + lastMessageTime, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.messages && data.messages.length > 0) {
+                    const chatMessages = document.getElementById('chat-messages');
+                    const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop === chatMessages.clientHeight;
+
+                    // 添加新消息
+                    data.messages.forEach(msg => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = `mb-3 ${msg.is_me ? 'd-flex justify-content-end' : 'd-flex justify-content-start'}`;
+                        messageDiv.innerHTML = `
+                            <div class="${msg.is_me ? 'bg-primary text-white' : 'bg-white border'} rounded-3 px-3 py-2" style="max-width: 70%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                ${!msg.is_me ? `<small class="text-muted d-block mb-1">{{ other_user.username }}</small>` : ''}
+                                <p class="mb-1">${msg.content}</p>
+                                <small class="${msg.is_me ? 'text-white-50' : 'text-muted'}">${new Date(msg.created_at).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</small>
+                            </div>
+                        `;
+                        chatMessages.appendChild(messageDiv);
+
+                        // 更新最后消息时间
+                        lastMessageTime = msg.created_at;
+                    });
+
+                    // 如果之前在底部，自动滚动到底部
+                    if (wasAtBottom) {
+                        scrollToBottom();
+                    }
+                }
+            })
+            .catch(error => console.error('获取新消息失败:', error));
+        }
+    }, 3000);
+
+    // 点击其他地方关闭表情包选择器
+    document.addEventListener('click', function(e) {
+        const picker = document.getElementById('chat-emoji-picker');
+        if (picker && picker.style.display === 'block') {
+            if (!e.target.closest('#chat-emoji-picker') && !e.target.closest('button[onclick="toggleChatEmojiPicker()"]')) {
+                picker.style.display = 'none';
+            }
+        }
+    });
+</script>
+{% endblock %}

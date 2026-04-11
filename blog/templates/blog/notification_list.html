@@ -1,0 +1,100 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}通知中心 - 个人博客{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 style="color: #4A90E2;">通知中心</h2>
+            {% if unread_count > 0 %}
+                <a href="{% url 'mark_all_read' %}" class="btn btn-sm btn-outline-primary">全部标为已读</a>
+            {% endif %}
+        </div>
+
+        {% if notifications %}
+            <div class="list-group">
+                {% for notification in notifications %}
+                    <div class="list-group-item {% if not notification.is_read %}bg-light{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    {% if notification.sender.avatar %}
+                                        <img src="{{ notification.sender.avatar.url }}" class="rounded-circle me-2" width="40" height="40" alt="{{ notification.sender.username }}">
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                            <span>{{ notification.sender.username|first|upper }}</span>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ notification.sender.username }}</strong>
+                                        <span class="text-muted ms-2">
+                                            {% if notification.notification_type == 'like' %}
+                                                给你的文章点了赞
+                                            {% elif notification.notification_type == 'comment' %}
+                                                评论了你的文章
+                                            {% elif notification.notification_type == 'message' %}
+                                                给你发送了私信
+                                            {% elif notification.notification_type == 'follow' %}
+                                                关注了你
+                                            {% elif notification.notification_type == 'new_post' %}
+                                                发布了新文章
+                                            {% endif %}
+                                        </span>
+                                        {% if not notification.is_read %}
+                                            <span class="badge bg-primary ms-2">未读</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    {% if notification.post %}
+                                        <a href="{% url 'post_detail' notification.post.id %}" class="text-decoration-none" style="color: #4A90E2;">
+                                            {{ notification.post.title }}
+                                        </a>
+                                    {% elif notification.notification_type == 'message' %}
+                                        <a href="{% url 'chat_with' username=notification.sender.username %}" class="text-decoration-none" style="color: #4A90E2;">
+                                            查看私信
+                                        </a>
+                                    {% elif notification.notification_type == 'follow' %}
+                                        <a href="{% url 'profile' username=notification.sender.username %}" class="text-decoration-none" style="color: #4A90E2;">
+                                            查看主页
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    {{ notification.created_at|date:"Y-m-d H:i" }}
+                                </div>
+                                {% if notification.comment %}
+                                    <div class="mt-2 p-2 bg-light rounded">
+                                        <small>"{{ notification.comment.content|truncatewords:20 }}"</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'mark_notification_read' notification.id %}" class="btn btn-sm btn-outline-primary ms-3">查看</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <h4>📬 暂无通知</h4>
+                <p>当有人给你的文章点赞或评论时，你会在这里收到通知</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-3">
+        <div class="sidebar-widget">
+            <h5 class="sidebar-title">📊 通知统计</h5>
+            <div class="d-flex justify-content-between mb-2">
+                <span>未读通知</span>
+                <span class="badge bg-primary">{{ unread_count }}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>总通知数</span>
+                <span class="badge bg-secondary">{{ notifications|length }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

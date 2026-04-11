@@ -1,4 +1,23 @@
+# Django Core
 Django==4.2.7
+
+# Database
+psycopg2-binary==2.9.9  # PostgreSQL support
+
+# Image Processing
 Pillow==10.1.0
+
+# Forms
 django-crispy-forms==2.0
 crispy-bootstrap5==0.7
+
+# Production Server
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Optional: Caching
+# redis==5.0.1
+# django-redis==5.4.0
+
+# Optional: Development
+# django-debug-toolbar==4.2.0

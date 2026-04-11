@@ -388,6 +388,51 @@ python manage.py collectstatic
 ### 问题 3：数据库连接失败
 **解决方案**：检查数据库配置和网络连接
 
+### 问题 4：迁移错误
+**解决方案**：
+```bash
+# 查看迁移状态
+python manage.py showmigrations
+
+# 回滚迁移
+python manage.py migrate <app> <migration_name>
+```
+
+### 问题 5：权限错误
+**解决方案**：
+```bash
+# 确保数据库文件可写
+chmod 666 db.sqlite3
+
+# 确保 media 目录可写
+chmod 755 media
+```
+
+---
+
+## 📊 部署检查清单
+
+### 部署前检查
+- [ ] 所有代码已提交到 Git 仓库
+- [ ] 测试所有功能在本地正常运行
+- [ ] 运行 `python manage.py check` 无错误
+- [ ] 修改 `SECRET_KEY` 为随机密钥
+- [ ] 配置 `ALLOWED_HOSTS` 包含你的域名
+- [ ] 设置 `DEBUG = False`（生产环境）
+- [ ] 配置数据库连接信息
+
+### 部署后验证
+- [ ] 用户注册流程正常
+- [ ] 用户登录/登出正常
+- [ ] 发布文章功能正常
+- [ ] 编辑/删除文章功能正常
+- [ ] 发表评论功能正常
+- [ ] 热度排行榜显示正常
+- [ ] 静态文件加载正常
+- [ ] 图片上传功能正常
+- [ ] HTTPS 访问正常（生产环境）
+- [ ] DEBUG 模式已关闭（生产环境）
+
 ---
 
 ## 📚 更多资源
@@ -396,6 +441,8 @@ python manage.py collectstatic
 - Django Girls 教程：https://tutorial.djangogirls.org/
 - Docker 文档：https://docs.docker.com/
 - Nginx 文档：https://nginx.org/en/docs/
+- CloudStudio 文档：https://cloud.tencent.com/developer/cloudstudio
+- PythonAnywhere 文档：https://help.pythonanywhere.com/
 
 ---
 

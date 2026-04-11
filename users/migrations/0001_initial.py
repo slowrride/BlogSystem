@@ -1,6 +1,7 @@
 # Generated migration for users app
-from django.contrib.auth.models import AbstractUser
+
 from django.db import migrations, models
+import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -24,7 +25,7 @@ class Migration(migrations.Migration):
                 ('last_name', models.CharField(blank=True, max_length=150, verbose_name='last name')),
                 ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
                 ('is_active', models.BooleanField(default=True, help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.', verbose_name='active')),
-                ('date_joined', models.DateTimeField(default=models.timezone.now, verbose_name='date joined')),
+                ('date_joined', models.DateTimeField(auto_now_add=True, verbose_name='date joined')),
                 ('avatar', models.ImageField(blank=True, null=True, upload_to='avatars/', verbose_name='头像')),
                 ('bio', models.TextField(blank=True, max_length=500, verbose_name='个人简介')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),

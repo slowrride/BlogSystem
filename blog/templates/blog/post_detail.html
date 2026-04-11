@@ -1,4 +1,5 @@
 {% extends 'blog/base.html' %}
+{% load blog_filters %}
 
 {% block title %}{{ post.title }} - 个人博客{% endblock %}
 
@@ -6,14 +7,14 @@
 <div class="row">
     <div class="col-md-9">
         <article>
-            <h1 class="mb-4">{{ post.title }}</h1>
+            <h1 class="mb-4" style="color: #4A90E2;">{{ post.title }}</h1>
             
             <div class="mb-4">
                 <div class="d-flex align-items-center">
                     {% if post.author.avatar %}
                         <img src="{{ post.author.avatar.url }}" class="rounded-circle me-2" width="40" height="40" alt="{{ post.author.username }}">
                     {% else %}
-                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
                             <span class="text-white">{{ post.author.username|first|upper }}</span>
                         </div>
                     {% endif %}
@@ -21,16 +22,79 @@
                         <a href="{% url 'profile' username=post.author.username %}" class="text-decoration-none">{{ post.author.username }}</a>
                         <p class="mb-0 text-muted small">发布于 {{ post.created_at|date:"Y年m月d日 H:i" }}</p>
                     </div>
+                    {% if user.is_authenticated and user != post.author %}
+                        <div class="ms-3 d-flex gap-2">
+                            {% if request.user in post.author.followers.all %}
+                                <a href="{% url 'unfollow_user' username=post.author.username %}" class="btn btn-sm btn-danger">取消关注</a>
+                            {% else %}
+                                <a href="{% url 'follow_user' username=post.author.username %}" class="btn btn-sm btn-primary">关注</a>
+                            {% endif %}
+                            <a href="{% url 'chat_with' username=post.author.username %}" class="btn btn-sm btn-primary">
+                                💬 私信
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
             {% if post.cover_image %}
-                <img src="{{ post.cover_image.url }}" class="img-fluid mb-4 rounded" alt="{{ post.title }}">
+                <img src="{{ post.cover_image.url }}" class="img-fluid mb-4 rounded post-cover-img" alt="{{ post.title }}">
             {% endif %}
 
-            <div class="post-content mb-4" style="line-height: 1.8; white-space: pre-wrap;">{{ post.content }}</div>
+            <div class="post-content mb-4 markdown-content" style="line-height: 1.8;" data-content="{{ post.content }}">{{ post.content }}</div>
 
-            <div class="mb-4">
+            <!-- 附件下载区域 -->
+            {% if post.attachment1 or post.attachment2 or post.attachment3 %}
+                <div class="mb-4">
+                    <h5 class="mb-3">📎 附件下载</h5>
+                    <div class="list-group">
+                        {% if post.attachment1 %}
+                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-file-earmark"></i>
+                                    <span class="ms-2">附件1 - {{ post.attachment1.name|filename }}</span>
+                                </div>
+                                <a href="{{ post.attachment1.url }}" class="btn btn-sm btn-primary" download>
+                                    <i class="bi bi-download"></i> 下载
+                                </a>
+                            </div>
+                        {% endif %}
+                        {% if post.attachment2 %}
+                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-file-earmark"></i>
+                                    <span class="ms-2">附件2 - {{ post.attachment2.name|filename }}</span>
+                                </div>
+                                <a href="{{ post.attachment2.url }}" class="btn btn-sm btn-primary" download>
+                                    <i class="bi bi-download"></i> 下载
+                                </a>
+                            </div>
+                        {% endif %}
+                        {% if post.attachment3 %}
+                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-file-earmark"></i>
+                                    <span class="ms-2">附件3 - {{ post.attachment3.name|filename }}</span>
+                                </div>
+                                <a href="{{ post.attachment3.url }}" class="btn btn-sm btn-primary" download>
+                                    <i class="bi bi-download"></i> 下载
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="mb-4 d-flex align-items-center gap-2">
+                <!-- 点赞按钮 -->
+                <button id="like-btn"
+                        class="btn {% if user in post.likes.all %}btn-danger{% else %}btn-outline-danger{% endif %}"
+                        data-post-id="{{ post.id }}"
+                        {% if not user.is_authenticated %}disabled title="请先登录"{% endif %}>
+                    <span id="like-icon">❤️</span>
+                    <span id="like-count">{{ post.like_count }}</span> 赞
+                </button>
+
                 <span class="badge heat-badge text-dark fs-6">热度: {{ post.heat }}</span>
                 <span class="badge bg-info fs-6">浏览量: {{ post.views }}</span>
                 <span class="badge bg-secondary fs-6">评论数: {{ post.comments.count }}</span>
@@ -38,7 +102,7 @@
 
             {% if post.author == request.user %}
                 <div class="mb-4">
-                    <a href="{% url 'post_update' post.id %}" class="btn btn-warning">编辑文章</a>
+                    <a href="{% url 'post_update' post.id %}" class="btn btn-primary">编辑文章</a>
                     <a href="{% url 'post_delete' post.id %}" class="btn btn-danger">删除文章</a>
                 </div>
             {% endif %}
@@ -47,14 +111,39 @@
         <hr>
 
         <div class="comment-section">
-            <h3>评论 ({{ post.comments.count }})</h3>
+            <h3 class="mb-4" style="color: #4A90E2;">评论 ({{ post.comments.count }})</h3>
             
             {% if user.is_authenticated %}
                 <form method="post" class="mb-4">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="{{ form.content.id_for_label }}" class="form-label">发表评论</label>
-                        {{ form.content }}
+                        <div class="position-relative">
+                            {{ form.content }}
+                            <button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="bottom: 10px; right: 10px;" onclick="toggleCommentEmojiPicker()">
+                                😊
+                            </button>
+                            <div id="comment-emoji-picker" class="position-absolute bg-white border rounded shadow" style="bottom: 50px; right: 10px; display: none; max-height: 300px; overflow-y: auto; z-index: 1000;">
+                                <div class="p-2">
+                                    <div class="emoji-category mb-2">
+                                        <small class="text-muted">常用表情</small>
+                                        <div class="emoji-grid d-flex flex-wrap">
+                                            {% for emoji in common_emojis %}
+                                            <span class="emoji-item p-2 cursor-pointer" onclick="insertCommentEmoji('{{ emoji }}')">{{ emoji }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="emoji-category">
+                                        <small class="text-muted">手势</small>
+                                        <div class="emoji-grid d-flex flex-wrap">
+                                            {% for emoji in gesture_emojis %}
+                                            <span class="emoji-item p-2 cursor-pointer" onclick="insertCommentEmoji('{{ emoji }}')">{{ emoji }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary">发表评论</button>
                 </form>
@@ -88,14 +177,183 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card">
-            <div class="card-header">
-                <h5>🔥 热度榜</h5>
+        <div class="sidebar-widget">
+            <h5 class="sidebar-title">👤 作者信息</h5>
+            {% if post.author.avatar %}
+                <img src="{{ post.author.avatar.url }}" class="rounded-circle mb-3 d-block mx-auto" width="80" height="80" alt="{{ post.author.username }}">
+            {% else %}
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mb-3 mx-auto" style="width: 80px; height: 80px;">
+                    <span class="fs-4">{{ post.author.username|first|upper }}</span>
+                </div>
+            {% endif %}
+            <p class="text-center mb-2"><strong>{{ post.author.username }}</strong></p>
+            <p class="text-center text-muted mb-3">作者</p>
+            <div class="d-grid gap-2">
+                <a href="{% url 'profile' username=post.author.username %}" class="btn btn-primary">查看主页</a>
+                {% if user.is_authenticated and user != post.author %}
+                    {% if request.user in post.author.followers.all %}
+                        <a href="{% url 'unfollow_user' username=post.author.username %}" class="btn btn-danger">取消关注</a>
+                    {% else %}
+                        <a href="{% url 'follow_user' username=post.author.username %}" class="btn btn-primary">关注</a>
+                    {% endif %}
+                {% endif %}
             </div>
-            <div class="card-body">
-                <a href="{% url 'hot_posts' %}" class="btn btn-sm btn-outline-primary w-100">查看热度排行榜</a>
-            </div>
+        </div>
+
+        <div class="sidebar-widget">
+            <h5 class="sidebar-title">🔥 热度榜</h5>
+            <a href="{% url 'hot_posts' %}" class="btn btn-primary w-100">查看热度排行榜</a>
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+.markdown-content h1 {
+    color: #4A90E2;
+    font-size: 1.8rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #E8F1F8;
+    padding-bottom: 0.5rem;
+}
+.markdown-content h2 {
+    color: #357ABD;
+    font-size: 1.5rem;
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #E8F1F8;
+    padding-bottom: 0.3rem;
+}
+.markdown-content blockquote {
+    border-left: 4px solid #4A90E2;
+    background: #F5F9FC;
+    padding: 0.5rem 1rem;
+    margin: 1rem 0;
+    color: #666;
+}
+.markdown-content code {
+    background: #f5f5f5;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: monospace;
+}
+.markdown-content pre {
+    background: #f5f5f5;
+    padding: 1rem;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+.markdown-content pre code {
+    background: none;
+    padding: 0;
+}
+.markdown-content strong {
+    font-weight: bold;
+}
+.markdown-content em {
+    font-style: italic;
+}
+
+/* 表情包选择器样式 */
+.emoji-item {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.emoji-item:hover {
+    transform: scale(1.2);
+}
+.emoji-grid {
+    gap: 5px;
+}
+.emoji-grid .emoji-item {
+    font-size: 1.5rem;
+}
+</style>
+<script>
+    // 评论表情包功能
+    function toggleCommentEmojiPicker() {
+        const picker = document.getElementById('comment-emoji-picker');
+        picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function insertCommentEmoji(emoji) {
+        const textarea = document.querySelector('textarea[name="content"]');
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+
+        textarea.value = text.substring(0, start) + emoji + text.substring(end);
+        textarea.focus();
+        textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+
+        // 插入后隐藏选择器
+        document.getElementById('comment-emoji-picker').style.display = 'none';
+    }
+
+    // 渲染 Markdown 内容
+    document.addEventListener('DOMContentLoaded', function() {
+        const markdownContents = document.querySelectorAll('.markdown-content');
+        markdownContents.forEach(function(element) {
+            const content = element.getAttribute('data-content');
+            if (content && typeof marked !== 'undefined') {
+                element.innerHTML = marked.parse(content);
+            }
+        });
+    });
+
+    document.getElementById('like-btn').addEventListener('click', function() {
+        const btn = this;
+        const postId = btn.dataset.postId;
+
+        fetch(`/post/${postId}/like/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                // 更新按钮状态
+                document.getElementById('like-count').textContent = data.like_count;
+                if (data.liked) {
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn-danger');
+                } else {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-danger');
+                }
+            });
+    });
+
+    // 点击其他地方关闭表情包选择器
+    document.addEventListener('click', function(e) {
+        const picker = document.getElementById('comment-emoji-picker');
+        if (picker && picker.style.display === 'block') {
+            if (!e.target.closest('#comment-emoji-picker') && !e.target.closest('button[onclick="toggleCommentEmojiPicker()"]')) {
+                picker.style.display = 'none';
+            }
+        }
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+
 {% endblock %}

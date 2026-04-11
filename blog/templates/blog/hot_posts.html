@@ -20,6 +20,7 @@
                             <th>评论数</th>
                             <th>热度</th>
                             <th>发布时间</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,6 +45,12 @@
                                     <span class="badge heat-badge text-dark fs-6">{{ post.heat }}</span>
                                 </td>
                                 <td>{{ post.created_at|date:"Y-m-d" }}</td>
+                                <td>
+                                    {% if user.is_authenticated and post.author == user %}
+                                        <a href="{% url 'post_update' post.id %}" class="btn btn-sm btn-outline-warning">编辑</a>
+                                        <a href="{% url 'post_delete' post.id %}" class="btn btn-sm btn-outline-danger">删除</a>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="row">
     <div class="col-md-9">
-        <h2 class="mb-4">最新文章</h2>
+        <h2 class="mb-4" style="color: #4A90E2;">最新文章</h2>
         
         {% if page_obj %}
             <div class="row">
@@ -13,7 +13,7 @@
                     <div class="col-md-12 mb-4">
                         <div class="card post-card">
                             {% if post.cover_image %}
-                                <img src="{{ post.cover_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                                <img src="{{ post.cover_image.url }}" class="card-img-top post-cover-img" alt="{{ post.title }}">
                             {% endif %}
                             <div class="card-body">
                                 <h3 class="card-title">
@@ -25,14 +25,20 @@
                                         发布时间: {{ post.created_at|date:"Y-m-d H:i" }}
                                     </small>
                                 </p>
-                                <p class="card-text">{{ post.content|truncatewords:30 }}</p>
+                                <p class="card-text post-summary">{{ post.content|truncatewords:30 }}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <span class="badge heat-badge text-dark">热度: {{ post.heat }}</span>
                                         <span class="badge bg-info">浏览: {{ post.views }}</span>
                                         <span class="badge bg-secondary">评论: {{ post.comments.count }}</span>
                                     </div>
-                                    <a href="{% url 'post_detail' post.id %}" class="btn btn-sm btn-outline-primary">阅读全文</a>
+                                    <div class="d-flex gap-2">
+                                        {% if user.is_authenticated and post.author == user %}
+                                            <a href="{% url 'post_update' post.id %}" class="btn btn-sm btn-outline-warning">编辑</a>
+                                            <a href="{% url 'post_delete' post.id %}" class="btn btn-sm btn-outline-danger">删除</a>
+                                        {% endif %}
+                                        <a href="{% url 'post_detail' post.id %}" class="read-more-link">阅读全文 →</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -76,36 +82,53 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card">
-            <div class="card-header">
-                <h5>🔥 热度榜</h5>
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    {% for post in page_obj|slice:":5" %}
-                        <li class="list-group-item">
-                            <a href="{% url 'post_detail' post.id %}" class="text-decoration-none">
-                                {{ post.title|truncatewords:10 }}
-                                <span class="badge heat-badge text-dark float-end">{{ post.heat }}</span>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-                <a href="{% url 'hot_posts' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">查看更多</a>
-            </div>
+        <div class="sidebar-widget">
+            <h5 class="sidebar-title">🔥 热度榜</h5>
+            <ul class="list-group list-group-flush">
+                {% for post in page_obj|slice:":5" %}
+                    <li class="list-group-item">
+                        <a href="{% url 'post_detail' post.id %}" class="text-decoration-none">
+                            {{ post.title|truncatewords:10 }}
+                            <span class="badge heat-badge text-dark float-end">{{ post.heat }}</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+            <a href="{% url 'hot_posts' %}" class="btn btn-sm btn-primary w-100 mt-3">查看更多</a>
         </div>
 
         {% if user.is_authenticated %}
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h5>📝 快速操作</h5>
-                </div>
-                <div class="card-body">
-                    <a href="{% url 'post_create' %}" class="btn btn-primary w-100 mb-2">发布文章</a>
-                    <a href="{% url 'profile' username=user.username %}" class="btn btn-outline-secondary w-100">我的主页</a>
-                </div>
+            <div class="sidebar-widget">
+                <h5 class="sidebar-title">👤 我的信息</h5>
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" class="rounded-circle mb-3 d-block mx-auto" width="80" height="80" alt="{{ user.username }}">
+                {% else %}
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mb-3 mx-auto" style="width: 80px; height: 80px;">
+                        <span class="fs-4">{{ user.username|first|upper }}</span>
+                    </div>
+                {% endif %}
+                <p class="text-center mb-2"><strong>{{ user.username }}</strong></p>
+                <p class="text-center text-muted mb-3">欢迎回来！</p>
+                <a href="{% url 'post_create' %}" class="btn btn-primary w-100 mb-2">发布文章</a>
+                <a href="{% url 'profile' username=user.username %}" class="btn btn-outline-secondary w-100">我的主页</a>
             </div>
         {% endif %}
+
+        <div class="sidebar-widget">
+            <h5 class="sidebar-title">📊 网站统计</h5>
+            <div class="d-flex justify-content-between mb-2">
+                <span>文章总数</span>
+                <span class="badge bg-info">{{ page_obj.paginator.count }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span>今日访问</span>
+                <span class="badge bg-success">128</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>总访问量</span>
+                <span class="badge bg-secondary">1,024</span>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
