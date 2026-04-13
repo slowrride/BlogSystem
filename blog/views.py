@@ -52,7 +52,7 @@ def post_list(request):
     """
     文章列表
     """
-    posts = Post.objects.all()
+    posts = Post.objects.filter(is_public=True)
     paginator = Paginator(posts, 10)  # 每页显示10篇文章
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -64,6 +64,11 @@ def post_detail(request, pk):
     文章详情
     """
     post = get_object_or_404(Post, pk=pk)
+
+    # 检查文章是否为私密且当前用户不是作者
+    if not post.is_public and request.user != post.author:
+        messages.error(request, '该文章仅作者可见！')
+        return redirect('post_list')
 
     # 增加浏览量
     post.views += 1
@@ -183,10 +188,10 @@ def hot_posts(request):
     """
     热度排行榜
     """
-    posts = Post.objects.annotate(
+    posts = Post.objects.filter(is_public=True).annotate(
         comment_count=Count('comments')
     ).order_by('-heat', '-views')[:20]  # 显示热度最高的20篇文章
-    
+
     return render(request, 'blog/hot_posts.html', {'posts': posts})
 
 

@@ -26,6 +26,9 @@ class Post(models.Model):
     attachment2 = models.FileField(upload_to='post_attachments/', blank=True, null=True, verbose_name='附件2')
     attachment3 = models.FileField(upload_to='post_attachments/', blank=True, null=True, verbose_name='附件3')
 
+    # 是否公开：True为公开，False为仅个人可见
+    is_public = models.BooleanField(default=True, verbose_name='是否公开')
+
     class Meta:
         verbose_name = '文章'
         verbose_name_plural = '文章'

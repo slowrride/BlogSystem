@@ -66,6 +66,12 @@
                     </div>
 
                     <div class="mb-3">
+                        <label for="{{ form.is_public.id_for_label }}" class="form-label">文章可见性</label>
+                        {{ form.is_public }}
+                        <small class="form-text text-muted">选择"仅个人可见"的文章将只有作者可以查看</small>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">附件上传（最多3个，可选）</label>
                         <div class="mb-2">
                             <label for="{{ form.attachment1.id_for_label }}" class="form-label text-muted small">附件1</label>
